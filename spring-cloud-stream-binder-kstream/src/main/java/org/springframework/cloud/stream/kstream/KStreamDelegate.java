@@ -18,17 +18,7 @@ package org.springframework.cloud.stream.kstream;
 
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.kstream.ForeachAction;
-import org.apache.kafka.streams.kstream.JoinWindows;
-import org.apache.kafka.streams.kstream.KGroupedStream;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.KeyValueMapper;
-import org.apache.kafka.streams.kstream.Predicate;
-import org.apache.kafka.streams.kstream.TransformerSupplier;
-import org.apache.kafka.streams.kstream.ValueJoiner;
-import org.apache.kafka.streams.kstream.ValueMapper;
-import org.apache.kafka.streams.kstream.ValueTransformerSupplier;
+import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.processor.ProcessorSupplier;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 
@@ -44,27 +34,27 @@ public class KStreamDelegate<K, V> implements KStream<K, V> {
 	}
 
 	@Override
-	public KStream<K, V> filter(Predicate<K, V> predicate) {
+	public KStream<K, V> filter(Predicate<? super K, ? super V> predicate) {
 		return delegate.filter(predicate);
 	}
 
 	@Override
-	public KStream<K, V> filterNot(Predicate<K, V> predicate) {
+	public KStream<K, V> filterNot(Predicate<? super K, ? super V> predicate) {
 		return delegate.filterNot(predicate);
 	}
 
 	@Override
-	public <K1> KStream<K1, V> selectKey(KeyValueMapper<K, V, K1> mapper) {
+	public <KR> KStream<KR, V>  selectKey(KeyValueMapper<? super K, ? super V, ? extends KR> mapper) {
 		return delegate.selectKey(mapper);
 	}
 
 	@Override
-	public <K1, V1> KStream<K1, V1> map(KeyValueMapper<K, V, KeyValue<K1, V1>> mapper) {
+	public <KR, VR> KStream<KR, VR> map(KeyValueMapper<? super K, ? super V, ? extends KeyValue<? extends KR, ? extends VR>> mapper) {
 		return delegate.map(mapper);
 	}
 
 	@Override
-	public <V1> KStream<K, V1> mapValues(ValueMapper<V, V1> mapper) {
+	public <VR> KStream<K, VR> mapValues(ValueMapper<? super V, ? extends VR> mapper)  {
 		return delegate.mapValues(mapper);
 	}
 
@@ -109,17 +99,17 @@ public class KStreamDelegate<K, V> implements KStream<K, V> {
 	}
 
 	@Override
-	public <K1, V1> KStream<K1, V1> flatMap(KeyValueMapper<K, V, Iterable<KeyValue<K1, V1>>> mapper) {
+	public <KR, VR> KStream<KR, VR> flatMap(KeyValueMapper<? super K, ? super V, ? extends Iterable<? extends KeyValue<? extends KR, ? extends VR>>> mapper) {
 		return delegate.flatMap(mapper);
 	}
 
 	@Override
-	public <V1> KStream<K, V1> flatMapValues(ValueMapper<V, Iterable<V1>> processor) {
+	public <VR> KStream<K, VR> flatMapValues(ValueMapper<? super V, ? extends Iterable<? extends VR>> processor) {
 		return delegate.flatMapValues(processor);
 	}
 
 	@Override
-	public KStream<K, V>[] branch(Predicate<K, V>[] predicates) {
+	public KStream<K, V>[] branch(Predicate<? super K, ? super V>... predicates) {
 		return delegate.branch(predicates);
 	}
 
@@ -129,12 +119,12 @@ public class KStreamDelegate<K, V> implements KStream<K, V> {
 	}
 
 	@Override
-	public void foreach(ForeachAction<K, V> action) {
+	public void foreach(ForeachAction<? super K, ? super V> action) {
 		delegate.foreach(action);
 	}
 
 	@Override
-	public KStream<K, V> through(StreamPartitioner<K, V> partitioner, String topic) {
+	public KStream<K, V> through(StreamPartitioner<? super K, ? super V> partitioner, String topic) {
 		return delegate.through(partitioner, topic);
 	}
 
@@ -144,7 +134,7 @@ public class KStreamDelegate<K, V> implements KStream<K, V> {
 	}
 
 	@Override
-	public KStream<K, V> through(Serde<K> keySerde, Serde<V> valSerde, StreamPartitioner<K, V> partitioner, String topic) {
+	public KStream<K, V> through(Serde<K> keySerde, Serde<V> valSerde, StreamPartitioner<? super K, ? super V> partitioner, String topic) {
 		return delegate.through(keySerde, valSerde, partitioner, topic);
 	}
 
@@ -154,8 +144,8 @@ public class KStreamDelegate<K, V> implements KStream<K, V> {
 	}
 
 	@Override
-	public void to(StreamPartitioner<K, V> partitioner, String topic) {
-		delegate.to(partitioner, topic);
+	public void to(StreamPartitioner<? super K, ? super V> partitioner, String topic) {
+		delegate.to(partitioner, topic);		
 	}
 
 	@Override
@@ -164,72 +154,92 @@ public class KStreamDelegate<K, V> implements KStream<K, V> {
 	}
 
 	@Override
-	public void to(Serde<K> keySerde, Serde<V> valSerde, StreamPartitioner<K, V> partitioner, String topic) {
+	public void to(Serde<K> keySerde, Serde<V> valSerde, StreamPartitioner<? super K, ? super V> partitioner, String topic) {
 		delegate.to(keySerde, valSerde, partitioner, topic);
 	}
 
 	@Override
-	public <K1, V1> KStream<K1, V1> transform(TransformerSupplier<K, V, KeyValue<K1, V1>> transformerSupplier, String... stateStoreNames) {
+	public <K1, V1> KStream<K1, V1> transform(TransformerSupplier<? super K, ? super V, KeyValue<K1, V1>> transformerSupplier, String... stateStoreNames) {
 		return delegate.transform(transformerSupplier, stateStoreNames);
 	}
 
 	@Override
-	public <R> KStream<K, R> transformValues(ValueTransformerSupplier<V, R> valueTransformerSupplier, String... stateStoreNames) {
+	public <VR> KStream<K, VR> transformValues(ValueTransformerSupplier<? super V, ? extends VR> valueTransformerSupplier, String... stateStoreNames) {
 		return delegate.transformValues(valueTransformerSupplier, stateStoreNames);
 	}
 
 	@Override
-	public void process(ProcessorSupplier<K, V> processorSupplier, String... stateStoreNames) {
+	public void process(ProcessorSupplier<? super K, ? super V> processorSupplier, String... stateStoreNames) {
 		delegate.process(processorSupplier, stateStoreNames);
 	}
 
 	@Override
-	public <V1, R> KStream<K, R> join(KStream<K, V1> otherStream, ValueJoiner<V, V1, R> joiner, JoinWindows windows, Serde<K> keySerde, Serde<V> thisValueSerde, Serde<V1> otherValueSerde) {
+	public <VO, VR> KStream<K, VR> join(KStream<K, VO> otherStream, ValueJoiner<? super V, ? super VO, ? extends VR> joiner, JoinWindows windows, Serde<K> keySerde, Serde<V> thisValueSerde, Serde<VO> otherValueSerde) {
 		return delegate.join(otherStream, joiner, windows, keySerde, thisValueSerde, otherValueSerde);
 	}
 
 	@Override
-	public <V1, R> KStream<K, R> join(KStream<K, V1> otherStream, ValueJoiner<V, V1, R> joiner, JoinWindows windows) {
+	public <VO, VR> KStream<K, VR> join(KStream<K, VO> otherStream, ValueJoiner<? super V, ? super VO, ? extends VR> joiner, JoinWindows windows) {
 		return delegate.join(otherStream, joiner, windows);
 	}
 
 	@Override
-	public <V1, R> KStream<K, R> outerJoin(KStream<K, V1> otherStream, ValueJoiner<V, V1, R> joiner, JoinWindows windows, Serde<K> keySerde, Serde<V> thisValueSerde, Serde<V1> otherValueSerde) {
+	public <GK, GV, RV> KStream<K, RV> join(GlobalKTable<GK, GV> globalKTable, KeyValueMapper<? super K, ? super V, ? extends GK> keyValueMapper, ValueJoiner<? super V, ? super GV, ? extends RV> joiner) {
+		return delegate.join(globalKTable, keyValueMapper, joiner);
+	}
+
+	@Override
+	public <VT, VR> KStream<K, VR> join(KTable<K, VT> table, ValueJoiner<? super V, ? super VT, ? extends VR> joiner) {
+		return delegate.join(table, joiner);
+	}
+
+	@Override
+	public <VT, VR> KStream<K, VR> join(KTable<K, VT> table, ValueJoiner<? super V, ? super VT, ? extends VR> joiner, Serde<K> keySerde, Serde<V> valSerde) {
+		return delegate.join(table, joiner, keySerde, valSerde);
+	}
+
+	@Override
+	public <VO, VR> KStream<K, VR> outerJoin(KStream<K, VO> otherStream, ValueJoiner<? super V, ? super VO, ? extends VR> joiner, JoinWindows windows, Serde<K> keySerde, Serde<V> thisValueSerde, Serde<VO> otherValueSerde) {
 		return delegate.outerJoin(otherStream, joiner, windows, keySerde, thisValueSerde, otherValueSerde);
 	}
 
 	@Override
-	public <V1, R> KStream<K, R> outerJoin(KStream<K, V1> otherStream, ValueJoiner<V, V1, R> joiner, JoinWindows windows) {
+	public <VO, VR> KStream<K, VR> outerJoin(KStream<K, VO> otherStream, ValueJoiner<? super V, ? super VO, ? extends VR> joiner, JoinWindows windows) {
 		return delegate.outerJoin(otherStream, joiner, windows);
 	}
 
 	@Override
-	public <V1, R> KStream<K, R> leftJoin(KStream<K, V1> otherStream, ValueJoiner<V, V1, R> joiner, JoinWindows windows, Serde<K> keySerde, Serde<V> thisValSerde, Serde<V1> otherValueSerde) {
+	public <VO, VR> KStream<K, VR> leftJoin(KStream<K, VO> otherStream, ValueJoiner<? super V, ? super VO, ? extends VR> joiner, JoinWindows windows, Serde<K> keySerde, Serde<V> thisValSerde, Serde<VO> otherValueSerde) {
 		return delegate.leftJoin(otherStream, joiner, windows, keySerde, thisValSerde, otherValueSerde);
 	}
 
 	@Override
-	public <V1, R> KStream<K, R> leftJoin(KStream<K, V1> otherStream, ValueJoiner<V, V1, R> joiner, JoinWindows windows) {
+	public <VO, VR> KStream<K, VR> leftJoin(KStream<K, VO> otherStream, ValueJoiner<? super V, ? super VO, ? extends VR> joiner, JoinWindows windows) {
 		return delegate.leftJoin(otherStream, joiner, windows);
 	}
 
 	@Override
-	public <V1, V2> KStream<K, V2> leftJoin(KTable<K, V1> table, ValueJoiner<V, V1, V2> joiner) {
+	public <VT, VR> KStream<K, VR> leftJoin(KTable<K, VT> table, ValueJoiner<? super V, ? super VT, ? extends VR> joiner) {
 		return delegate.leftJoin(table, joiner);
 	}
 
 	@Override
-	public <V1, V2> KStream<K, V2> leftJoin(KTable<K, V1> table, ValueJoiner<V, V1, V2> valueJoiner, Serde<K> keySerde, Serde<V> valSerde) {
-		return delegate.leftJoin(table, valueJoiner, keySerde, valSerde);
+	public <VT, VR> KStream<K, VR> leftJoin(KTable<K, VT> table, ValueJoiner<? super V, ? super VT, ? extends VR> joiner, Serde<K> keySerde, Serde<V> valSerde) {
+		return delegate.leftJoin(table, joiner, keySerde, valSerde);
 	}
 
 	@Override
-	public <K1> KGroupedStream<K1, V> groupBy(KeyValueMapper<K, V, K1> selector) {
+	public <GK, GV, RV> KStream<K, RV> leftJoin(GlobalKTable<GK, GV> globalKTable, KeyValueMapper<? super K, ? super V, ? extends GK> keyValueMapper, ValueJoiner<? super V, ? super GV, ? extends RV> valueJoiner) {
+		return delegate.leftJoin(globalKTable, keyValueMapper, valueJoiner);
+	}
+
+	@Override
+	public <KR> KGroupedStream<KR, V> groupBy(KeyValueMapper<? super K, ? super V, KR> selector) {
 		return delegate.groupBy(selector);
 	}
 
 	@Override
-	public <K1> KGroupedStream<K1, V> groupBy(KeyValueMapper<K, V, K1> selector, Serde<K1> keySerde, Serde<V> valSerde) {
+	public <KR> KGroupedStream<KR, V> groupBy(KeyValueMapper<? super K, ? super V, KR> selector, Serde<KR> keySerde, Serde<V> valSerde) {
 		return delegate.groupBy(selector, keySerde, valSerde);
 	}
 
