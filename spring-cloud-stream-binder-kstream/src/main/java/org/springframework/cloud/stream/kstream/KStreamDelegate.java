@@ -124,6 +124,11 @@ public class KStreamDelegate<K, V> implements KStream<K, V> {
 	}
 
 	@Override
+	public KStream<K, V> peek(ForeachAction<? super K, ? super V> foreachAction) {
+		return delegate.peek(foreachAction);
+	}
+
+	@Override
 	public KStream<K, V> through(StreamPartitioner<? super K, ? super V> partitioner, String topic) {
 		return delegate.through(partitioner, topic);
 	}
